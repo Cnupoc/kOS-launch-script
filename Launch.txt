@@ -28,22 +28,27 @@ SET PITCH_STEP TO 5.
 SET ROW_STATE TO 20.
 
 // Max fuel not to count as a separator
-SET SEP_SOLID TO 25.
+// change the numeric value to your ship's separators.
+SET SEP_SOLID TO 150.
 
 //////////
 
 // Identify SRB's and count any fuel in the separators
 SET SOLID_EMPTY TO 0.
-SET SEP_SOLID TO 8.
-SET SRB_PRESENT TO 0.
+SET SRB_PRESENT TO FALSE.
 SET LIQUID_EMPTY TO 0.
-SET LRB_PRESENT TO 0.
+SET LRB_PRESENT TO FALSE.
 
 //flight params
 SET NEAR_APOAPSIS TO 0.
 SET LEFT_ATMO TO 0.
 SET STAGING_END TO 0.
 SET ETA_APOAPSIS TO FALSE.
+
+
+
+/////////////////////// 
+
 
 PRINT "==========================".
 PRINT "-> INITIATING SYSTEMS".
@@ -104,58 +109,54 @@ WAIT 0.5.
 LIST ENGINES IN ENGLIST.
 FOR ENG IN ENGLIST {
 	IF ENG:ALLOWSHUTDOWN = FALSE {
-                                SET SRB_PRESENT TO 1.
-		PRINT "Found SRB " + ENG:NAME.
-
+        SET SRB_PRESENT TO TRUE.
+		PRINT "FOUND SRB " + ENG:NAME.
 		FOR RES IN ENG:RESOURCES {
 			PRINT "  - " + RES:NAME + " = " + RES:AMOUNT.
 			IF RES:AMOUNT < SEP_SOLID {
 				SET SOLID_EMPTY TO SOLID_EMPTY + RES:AMOUNT.
+				SET SRB_PRESENT TO FALSE.
 			}.
 		}.
 		WAIT 0.2.
 	}. 
-ELSE SET SRB_PRESENT TO 0.
 }.
-	IF SRB_PRESENT = 0 {
+	IF SRB_PRESENT = FALSE {
       PRINT "========================".
-      PRINT "==== NO SRB'S FOUND!====".
-      PRINT "========================".
+      PRINT "     NO SRB'S FOUND!    ".
 
 }.
-	IF SRB_PRESENT = 1 {
+	IF SRB_PRESENT = TRUE {
       PRINT "========================".
-      PRINT "====  SRB'S FOUND!  ====".
-      PRINT "========================".
+      PRINT "      SRB'S FOUND!      ".
 }.
 WAIT 1.
 
 LIST ENGINES IN ENGLIST.
 FOR ENG IN ENGLIST {
-                IF ENG:ALLOWSHUTDOWN = TRUE {
-		PRINT "Found LRB " + ENG:NAME.
-		SET LRB_PRESENT TO 1.
+    IF ENG:ALLOWSHUTDOWN = TRUE {
+		SET LRB_PRESENT TO TRUE.
+		PRINT "FOUND LIQUID ENGINE " + ENG:NAME.
 		FOR RES IN ENG:RESOURCES {
 			PRINT "  - " + RES:NAME + " = " + RES:AMOUNT.
 			IF RES:AMOUNT < SEP_SOLID {
 				SET LIQUID_EMPTY TO LIQUID_EMPTY + RES:AMOUNT.
+				SET LRB_PRESENT TO FALSE.
 			}.
 		}.
 	    WAIT 0.2.
 	}.	
-ELSE SET LRB_PRESENT TO 0.
 }.
-	IF LRB_PRESENT = 0 {
-      PRINT "========================".
-      PRINT "==== NO LRB'S FOUND!====".
-      PRINT "========================".
+
+IF LRB_PRESENT = FALSE {
+	PRINT "========================".
+	PRINT "    NO LRB'S FOUND!     ".
 
 	 
 }. 
-	IF LRB_PRESENT = 1 { 
-      PRINT "========================".
-      PRINT "===== LRB'S FOUND! =====".
-      PRINT "========================".
+IF LRB_PRESENT = TRUE { 
+	PRINT "========================".
+	PRINT "     LRB'S FOUND! ".
 
 }.
 WAIT 0.5.
@@ -182,11 +183,16 @@ FROM {local countdown is 10.} UNTIL countdown = 0 STEP {SET countdown to countdo
 
 V0:PLAY( NOTE( 880, 1) ).
 PRINT "Blast off!".
+PRINT "========================".
 
 WHEN MAXTHRUST = 0 THEN {
-    PRINT "STAGING "+STAGE:NUMBER.	
+    PRINT "STAGING "+STAGE:NUMBER.
+    PRINT "========================".
+	
     STAGE.
+    WAIT 0.5.
     PRINT "CURRENT STAGE: "+STAGE:NUMBER.
+    PRINT "========================".
     PRESERVE.
 }.
 
@@ -194,15 +200,24 @@ WHEN MAXTHRUST = 0 THEN {
 IF SRB_PRESENT = 1
 WHEN STAGE:SOLIDFUEL < SOLID_EMPTY THEN {
 	PRINT "Staging "+STAGE:NUMBER+"- SRB's".
+	PRINT "========================".
+	STAGE.
+	WAIT 0.5.
+	PRINT "CURRENT STAGE: "+STAGE:NUMBER.
+	PRINT "========================".
 	STAGE.
 }.
 
 // Jettison LRB'S... ONCE
 IF LRB_PRESENT = 1 {
 WHEN STAGE:LIQUIDFUEL < LIQUID_EMPTY THEN {
-	PRINT "Staging "+STAGE:NUMBER+" - LRB's".
+	PRINT "Staging "+STAGE:NUMBER+"- LRB's".
+	PRINT "========================".
 	STAGE.
-                PRINT "CURRENT STAGE: "+STAGE:NUMBER.
+	WAIT 0.5.
+	PRINT "CURRENT STAGE: "+STAGE:NUMBER.
+	PRINT "========================".
+	STAGE.
 	}.
 }.
 
@@ -279,24 +294,24 @@ lock steering to heading(90,0). // Look at east (90), zero degrees above the hor
 UNTIL LEFT_ATMO > 0 {
 	IF STAGING_END > 0 AND SHIP:ALTITUDE > 70000 {
 		PRINT "LEFT ATMOSPHERE.".
-WAIT 1.
-                                PRINT "========================".
-WAIT 1.
+		WAIT 1.
+		PRINT "========================".
+		WAIT 1.
 		PRINT "DEPLOYING PANELS & RADIATORS.".
 		PANELS ON.
 		RADIATORS ON.
 	
 		wait 1.
-                                PRINT "========================".
-WAIT 1.
+		PRINT "========================".
+		WAIT 1.
 		print "RCS ON.".
 		RCS ON.
 
 		WAIT 5.
 		PRINT "PANELS DEPLOYED.".
 		SET LEFT_ATMO TO 1.
-                                PRINT "========================".
-WAIT 5.
+		PRINT "========================".
+		WAIT 5.
 	} ELSE {
 	PRINT "  AP = "+ROUND(SHIP:APOAPSIS,0)+"      " AT (0,ROW_STATE+1).
 	PRINT "  PE = "+ROUND(SHIP:PERIAPSIS,0)+"      " AT (0,ROW_STATE+2).
@@ -411,8 +426,8 @@ CLEARSCREEN.
 		PRINT "PERFECTING ORBIT:".
 		print "Attraction:  "+gForce.
 		print "Centripetal: "+cForce.
-	                PRINT "  AP = "+ROUND(SHIP:APOAPSIS,0)+"      " AT (0,ROW_STATE+1).
-	                PRINT "  PE = "+ROUND(SHIP:PERIAPSIS,0)+"      " AT (0,ROW_STATE+2).
+		PRINT "  AP = "+ROUND(SHIP:APOAPSIS,0)+"      " AT (0,ROW_STATE+1).
+		PRINT "  PE = "+ROUND(SHIP:PERIAPSIS,0)+"      " AT (0,ROW_STATE+2).
     
 		// Wait one tenth of a second
 		wait .1.
