@@ -11,3 +11,12 @@ version 1.2
 - there's a check for the last stage when eccentricity burn happens if you will have enough TWR to keep vert.speed. So very heavy and slow last stages are not welcome. the program will end when the check is confirmed.
 - rendezvous are WIP.
 - i'm a newb. 
+
+
+v1.3
+=====================================
+
+- added a proper liquid fuel check by listing ship resources whilie checking for liquid engines.
+- tweaked flight plan a little. 
+- rendezvous are still WIP. 
+
